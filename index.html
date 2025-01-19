@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>RAM Timings Comparison</title>
+<style>
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  th, td {
+    border: 1px solid black;
+    padding: 8px;
+    text-align: center;
+  }
+  th {
+    background-color: #f0f0f0;
+  }
+  .input-container {
+    margin-bottom: 10px;
+  }
+  .delete-button {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    margin-left: 5px;
+  }
+  .delete-button:hover {
+    background-color: #d32f2f;
+  }
+</style>
+</head>
+<body>
+
+<h2>RAM Timings Comparison</h2>
+
+<div class="input-container">
+  <label for="frequency">Frequency (MHz):</label>
+  <input type="number" id="frequency" value="6000">
+  <label for="cl">CL:</label>
+  <input type="number" id="cl" value="36">
+  <label for="trcd">tRCD:</label>
+  <input type="number" id="trcd" value="38">
+  <label for="trp">tRP:</label>
+  <input type="number" id="trp" value="38">
+  <label for="tras">tRAS:</label>
+  <input type="number" id="tras" value="76">
+  <button onclick="addMemory()">Add</button>
+</div>
+
+<table id="memoryTable">
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <!-- Headers for comparison -->
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Frequency (MHz)</td>
+      <!-- Cells for frequency -->
+    </tr>
+    <tr>
+      <td>CL (ns)</td>
+      <!-- Cells for CL -->
+    </tr>
+    <tr>
+      <td>tRCD (ns)</td>
+      <!-- Cells for tRCD -->
+    </tr>
+    <tr>
+      <td>tRP (ns)</td>
+      <!-- Cells for tRP -->
+    </tr>
+    <tr>
+      <td>tRAS (ns)</td>
+      <!-- Cells for tRAS -->
+    </tr>
+  </tbody>
+</table>
+
+<script>
+  function calculateLatency(timing, frequency) {
+    return (timing / frequency) * 2000;
+  }
+
+  function addMemory() {
+    const frequency = parseFloat(document.getElementById("frequency").value);
+    const cl = parseInt(document.getElementById("cl").value);
+    const trcd = parseInt(document.getElementById("trcd").value);
+    const trp = parseInt(document.getElementById("trp").value);
+    const tras = parseInt(document.getElementById("tras").value);
+
+    if (isNaN(frequency) || isNaN(cl) || isNaN(trcd) || isNaN(trp) || isNaN(tras)) {
+      alert("Please enter valid numbers.");
+      return;
+    }
+
+    const memoryConfig = `${frequency} ${cl}-${trcd}-${trp}-${tras}`;
+    addMemoryToTable(memoryConfig, frequency, cl, trcd, trp, tras);
+  }
+
+  function getColor(value, minValue, maxValue) {
+    const ratio = (value - minValue) / (maxValue - minValue);
+    const green = Math.round(255 * (1 - ratio));
+    const red = Math.round(255 * ratio);
+    return `rgb(${red}, ${green}, 0)`;
+  }
+
+  function applyColorCoding(cell, value, minValue, maxValue) {
+    cell.style.backgroundColor = getColor(value, minValue, maxValue);
+  }
+
+  function addMemoryToTable(memoryConfig, frequency, cl, trcd, trp, tras) {
+    const table = document.getElementById("memoryTable");
+
+    if (table.rows[0].cells.length < 11) {
+      const headerCell = table.rows[0].insertCell();
+      headerCell.innerHTML = `${memoryConfig} <button class="delete-button" onclick="deleteColumn(${table.rows[0].cells.length - 1})">Delete</button>`;
+
+      const frequencyCell = table.rows[1].insertCell();
+      frequencyCell.textContent = frequency;
+
+      const clLatency = calculateLatency(cl, frequency);
+      const clCell = table.rows[2].insertCell();
+      clCell.textContent = clLatency.toFixed(2);
+      clCell.setAttribute('data-value', clLatency); // Store the value for color coding
+
+      const trcdLatency = calculateLatency(trcd, frequency);
+      const trcdCell = table.rows[3].insertCell();
+      trcdCell.textContent = trcdLatency.toFixed(2);
+      trcdCell.setAttribute('data-value', trcdLatency);
+
+      const trpLatency = calculateLatency(trp, frequency);
+      const trpCell = table.rows[4].insertCell();
+      trpCell.textContent = trpLatency.toFixed(2);
+      trpCell.setAttribute('data-value', trpLatency);
+
+      const trasLatency = calculateLatency(tras, frequency);
+      const trasCell = table.rows[5].insertCell();
+      trasCell.textContent = trasLatency.toFixed(2);
+      trasCell.setAttribute('data-value', trasLatency);
+
+      updateColorCoding(); // Apply color coding after adding a column
+    } else {
+      alert("Reached the limit of memory configurations to compare (10).");
+    }
+  }
+
+  function deleteColumn(columnIndex) {
+    const table = document.getElementById("memoryTable");
+    for (let i = 0; i < table.rows.length; i++) {
+      if (table.rows[i].cells.length > columnIndex) {
+        table.rows[i].deleteCell(columnIndex);
+      }
+    }
+    updateColorCoding(); // Reapply color coding after deleting a column
+  }
+
+  function updateColorCoding() {
+    const table = document.getElementById("memoryTable");
+    const clValues = [];
+    const trcdValues = [];
+    const trpValues = [];
+    const trasValues = [];
+
+    // Collect all the latency values
+    for (let i = 1; i < table.rows[0].cells.length; i++) {
+      const clCell = table.rows[2].cells[i];
+      const trcdCell = table.rows[3].cells[i];
+      const trpCell = table.rows[4].cells[i];
+      const trasCell = table.rows[5].cells[i];
+
+      if (clCell) clValues.push(parseFloat(clCell.getAttribute('data-value')));
+      if (trcdCell) trcdValues.push(parseFloat(trcdCell.getAttribute('data-value')));
+      if (trpCell) trpValues.push(parseFloat(trpCell.getAttribute('data-value')));
+      if (trasCell) trasValues.push(parseFloat(trasCell.getAttribute('data-value')));
+    }
+
+    // Calculate min and max for each timing
+    const clMin = Math.min(...clValues);
+    const clMax = Math.max(...clValues);
+    const trcdMin = Math.min(...trcdValues);
+    const trcdMax = Math.max(...trcdValues);
+    const trpMin = Math.min(...trpValues);
+    const trpMax = Math.max(...trpValues);
+    const trasMin = Math.min(...trasValues);
+    const trasMax = Math.max(...trasValues);
+
+    // Apply color coding to the cells
+    for (let i = 1; i < table.rows[0].cells.length; i++) {
+      const clCell = table.rows[2].cells[i];
+      const trcdCell = table.rows[3].cells[i];
+      const trpCell = table.rows[4].cells[i];
+      const trasCell = table.rows[5].cells[i];
+
+      if (clCell) applyColorCoding(clCell, parseFloat(clCell.getAttribute('data-value')), clMin, clMax);
+      if (trcdCell) applyColorCoding(trcdCell, parseFloat(trcdCell.getAttribute('data-value')), trcdMin, trcdMax);
+      if (trpCell) applyColorCoding(trpCell, parseFloat(trpCell.getAttribute('data-value')), trpMin, trpMax);
+      if (trasCell) applyColorCoding(trasCell, parseFloat(trasCell.getAttribute('data-value')), trasMin, trasMax);
+    }
+  }
+</script>
+
+</body>
+</html>
